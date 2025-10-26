@@ -49,7 +49,7 @@ def extractGifFrames(inGif):
     with open('%s.raw' % (os.path.basename(inGif),), "wb+") as f:
         while frame:
             data = convert_frame_to_data(frame)
-            f.write(data.tostring())
+            f.write(data.tobytes())
             nframes += 1
             try:
                 frame.seek( nframes )
