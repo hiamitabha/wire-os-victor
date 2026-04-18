@@ -18,11 +18,9 @@ Any feature added here should be somewhat objectively applicable to other CFW. F
 
 ## Building
 
-`wire-os-victor` can be built standalone on most Linux distros (arm64 or amd64).
+`wire-os-victor` can be built standalone on most Linux distros (arm64 or amd64) and on macOS (arm64/M-series).
 
-macOS building used to work, but **doesn't at the moment**. This will be fixed soon. Disregard the macOS instructions for now.
-
-Docker is recommended for now (especially if you have a weird or old Linux distro installed), though bare metal works nicely too.
+For Linux, the Docker method is recommended for now (especially if you have a weird or old Linux distro installed), though bare metal works nicely too.
 
 Note that if you have built in Docker before and want to build on bare metal now (or vice-versa), you should do a [clean](#cleaning) build.
 
@@ -106,10 +104,8 @@ vbuild
 <summary><strong>macOS (M-series only)</strong></summary>
 <br />
 
-# macOS BUILDING IS NOT WORKING AT THE MOMENT. THIS WILL BE FIXED SOON.
-
 - Prereqs: Make sure you have [brew](https://brew.sh/) installed.
-  -  Then: `brew install ccache wget upx ninja`
+  -  Then: `brew install ccache wget upx ninja pkg-config`
 
 1. Clone the repo and cd into it:
 
@@ -141,8 +137,6 @@ cd ~/wire-os-victor
 <details>
 <summary><strong>(Docker: x86_64 or arm64 Linux) or (macOS M-series)</strong></summary>
 <br \>
-
-# macOS BUILDING IS NOT WORKING AT THE MOMENT. THIS WILL BE FIXED SOON.
 
 - Run:
 
