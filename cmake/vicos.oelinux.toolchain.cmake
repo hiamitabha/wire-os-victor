@@ -115,6 +115,7 @@ list(APPEND VICOS_COMPILER_FLAGS_CXX
 list(APPEND VICOS_COMPILER_FLAGS_RELEASE
   -D_FORTIFY_SOURCE=2)
 list(APPEND VICOS_LINKER_FLAGS
+	-Wl,--no-warn-mismatch
 	-Wl,--build-id
 	#-Wl,--gdb-index
 	-Wl,--warn-shared-textrel
@@ -147,8 +148,9 @@ endif()
 # Toolchain and ABI specific flags.
 list(APPEND VICOS_COMPILER_FLAGS
 	-march=armv7-a
-	-mfloat-abi=softfp
-	-mfpu=neon-vfpv4)
+	-mfloat-abi=hard
+	-mfpu=neon-vfpv4
+	-mcpu=cortex-a7)
 list(APPEND VICOS_LINKER_FLAGS
 	-Wl,--fix-cortex-a8)
 

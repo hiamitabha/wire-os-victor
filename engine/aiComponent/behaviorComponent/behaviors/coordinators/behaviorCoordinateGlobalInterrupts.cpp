@@ -44,6 +44,7 @@ namespace{
   // add behavior _classes_ here if we should disable the prox-based "react to sudden obstacle" behavior while
   // _any_ behavior of that class is running below us on the stack
   static const std::set<BehaviorClass> kBehaviorClassesToSuppressProx = {{ BEHAVIOR_CLASS(BlackJack),
+                                                                           BEHAVIOR_CLASS(CubeDrive),
                                                                            BEHAVIOR_CLASS(FistBump),
                                                                            BEHAVIOR_CLASS(FindCube),
                                                                            BEHAVIOR_CLASS(Keepaway),
@@ -55,6 +56,7 @@ namespace{
                                                                            BEHAVIOR_CLASS(PossiblePerformance) }};
 
   static const std::set<BehaviorClass> kBehaviorClassesToSuppressReactToSound = {{ BEHAVIOR_CLASS(BlackJack),
+                                                                                   BEHAVIOR_CLASS(CubeDrive),
                                                                                    BEHAVIOR_CLASS(DanceToTheBeat),
                                                                                    BEHAVIOR_CLASS(FetchCube),
                                                                                    BEHAVIOR_CLASS(FistBump),
@@ -72,10 +74,11 @@ namespace{
                                                                             BEHAVIOR_CLASS(PossiblePerformance) }};
 
   static const std::set<BehaviorClass> kBehaviorClassesToSuppressCliff = {{ BEHAVIOR_CLASS(BlackJack),
-                                                                            BEHAVIOR_CLASS(FetchCube) }};
+                                                                            BEHAVIOR_CLASS(CubeDrive) }};
 
   static const std::set<BehaviorClass> kBehaviorClassesToSuppressTimerAntics = {{ BEHAVIOR_CLASS(BlackJack),
                                                                                   BEHAVIOR_CLASS(CoordinateWeather),
+                                                                                  BEHAVIOR_CLASS(CubeDrive),
                                                                                   BEHAVIOR_CLASS(PossiblePerformance) }};
 
   static const std::set<BehaviorID> kBehaviorIDsToSuppressWhenMeetVictor = {{
@@ -118,17 +121,6 @@ namespace{
     BEHAVIOR_ID(DanceToTheBeat),
     BEHAVIOR_ID(ReactToObstacle),
     BEHAVIOR_ID(ReactToSoundAwake),
-  };
-
-  // while the behavior is actually activated
-  static const std::set<BehaviorID> kBehaviorIDsToSuppressWhileDetectingPets = {
-    BEHAVIOR_ID(DanceToTheBeatCoordinator),
-    BEHAVIOR_ID(ListenForBeats),
-    BEHAVIOR_ID(DanceToTheBeat),
-    BEHAVIOR_ID(ReactToObstacle),
-    BEHAVIOR_ID(ReactToSoundAwake),
-    BEHAVIOR_ID(PossibleUnintentionalPerformance),
-    BEHAVIOR_ID(PossibleIntentionalPerformance),
   };
 }
 
@@ -189,10 +181,6 @@ void BehaviorCoordinateGlobalInterrupts::InitPassThrough()
     _iConfig.toSuppressWhenInAnIntentionalPerformance.push_back( BC.FindBehaviorByID(id) );
   }
 
-  for( const auto& id : kBehaviorIDsToSuppressWhileDetectingPets ) {
-    _iConfig.toSuppressWhileDetectingPets.push_back( BC.FindBehaviorByID(id) );
-  }
-
   BC.FindBehaviorByIDAndDowncast(BEHAVIOR_ID(TimerUtilityCoordinator),
                                  BEHAVIOR_CLASS(TimerUtilityCoordinator),
                                  _iConfig.timerCoordBehavior);
@@ -208,12 +196,10 @@ void BehaviorCoordinateGlobalInterrupts::InitPassThrough()
   _iConfig.danceToTheBeatBehavior = BC.FindBehaviorByID(BEHAVIOR_ID(DanceToTheBeat));
   _iConfig.intentionalPerformanceBehavior = BC.FindBehaviorByID(BEHAVIOR_ID(PossibleIntentionalPerformance));
   _iConfig.unintentionalPerformanceBehavior = BC.FindBehaviorByID(BEHAVIOR_ID(PossibleUnintentionalPerformance));
-  _iConfig.petDetectionBehavior = BC.FindBehaviorByID(BEHAVIOR_ID(PetDetection));
 
   _iConfig.behaviorsThatShouldntReactToUnexpectedMovement.AddBehavior(BC, BEHAVIOR_CLASS(BumpObject));
   _iConfig.behaviorsThatShouldntReactToUnexpectedMovement.AddBehavior(BC, BEHAVIOR_CLASS(ClearChargerArea));
   _iConfig.behaviorsThatShouldntReactToUnexpectedMovement.AddBehavior(BC, BEHAVIOR_CLASS(ReactToHand));
-  _iConfig.behaviorsThatShouldntReactToUnexpectedMovement.AddBehavior(BC, BEHAVIOR_CLASS(PetDetection));
   _iConfig.behaviorsThatShouldntReactToUnexpectedMovement.AddBehavior(BC, BEHAVIOR_CLASS(PossiblePerformance));
   _iConfig.reactToUnexpectedMovementBehavior = BC.FindBehaviorByID(BEHAVIOR_ID(ReactToUnexpectedMovement));
 
@@ -292,12 +278,6 @@ void BehaviorCoordinateGlobalInterrupts::PassThroughUpdate()
 
   if( _iConfig.unintentionalPerformanceBehavior->IsActivated() ) {
     for( const auto& beh : _iConfig.toSuppressWhenInAnUnintentionalPerformance ) {
-      beh->SetDontActivateThisTick(GetDebugLabel());
-    }
-  }
-
-  if( _iConfig.petDetectionBehavior->IsActivated() ) {
-    for( const auto& beh : _iConfig.toSuppressWhileDetectingPets ) {
       beh->SetDontActivateThisTick(GetDebugLabel());
     }
   }

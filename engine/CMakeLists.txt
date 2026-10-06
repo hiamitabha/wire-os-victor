@@ -7,7 +7,6 @@ option(USE_DAS "Enable DAS reporting" OFF)
 option(ALEXA_ACOUSTIC_TEST "Enable alexa acoustic testing (no movement mode)" OFF)
 
 include(opencv)
-include(okao)
 include(flatbuffers)
 include(protobuf)
 include(anki_build_strip)
@@ -121,6 +120,8 @@ target_include_directories(cozmo_engine
 )
 
 if (VICOS)
+  target_link_options(cozmo_engine PRIVATE -Wl,--exclude-libs,ALL)
+
   # TODO: support tools on mac
   add_subdirectory(tools)
 

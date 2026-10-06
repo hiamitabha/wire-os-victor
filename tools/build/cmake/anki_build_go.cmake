@@ -1,5 +1,5 @@
 function(anki_build_go)
-  cmake_parse_arguments(ANKI "" "NAME;DIR;OUTPUT_NAME;BUILD_TAGS" "SRC_DIRS;INCLUDE_DIRS;LINK_FLAGS;PKG_CONFIG_PATHS;EXTRA_DEPENDS" ${ARGN})
+  cmake_parse_arguments(ANKI "NATIVE" "NAME;DIR;OUTPUT_NAME;BUILD_TAGS" "SRC_DIRS;INCLUDE_DIRS;LINK_FLAGS;PKG_CONFIG_PATHS;EXTRA_DEPENDS" ${ARGN})
   if(NOT ANKI_NAME OR NOT ANKI_DIR)
     message(FATAL_ERROR "anki_build_go: NAME and DIR are required")
   endif()
@@ -19,21 +19,23 @@ function(anki_build_go)
   endif()
 
   get_filename_component(go_project_dir ${ANKI_DIR} ABSOLUTE)
-  set(go_out ${CMAKE_BINARY_DIR}/${output_name})
+  if(ANKI_NATIVE)
+    set(go_out_dir ${CMAKE_BINARY_DIR}/native)
+  else()
+    set(go_out_dir ${CMAKE_BINARY_DIR})
+  endif()
+  set(go_out ${go_out_dir}/${output_name})
   set(stamp_file ${go_out}.built)
 
-  set(go_srcs "")
+  file(GLOB_RECURSE go_srcs CONFIGURE_DEPENDS ${go_project_dir}/*.go)
   set(go_build_paths "")
   if(ANKI_SRC_DIRS)
     foreach(d IN LISTS ANKI_SRC_DIRS)
       set(abs ${go_project_dir}/${d})
       if(IS_DIRECTORY ${abs})
-        file(GLOB_RECURSE tmp ${abs}/*.go)
-        list(APPEND go_srcs ${tmp})
         file(RELATIVE_PATH rel ${go_project_dir} ${abs})
         list(APPEND go_build_paths ./${rel})
       elseif(EXISTS ${abs})
-        list(APPEND go_srcs ${abs})
         file(RELATIVE_PATH rel ${go_project_dir} ${abs})
         list(APPEND go_build_paths ${rel})
       else()
@@ -41,18 +43,29 @@ function(anki_build_go)
       endif()
     endforeach()
   else()
-    file(GLOB_RECURSE go_srcs ${go_project_dir}/*.go)
     list(APPEND go_build_paths ./...)
   endif()
 
-  set(go_env
-    CGO_ENABLED=1
-    GOOS=linux
-    GOARCH=arm
-    GOARM=7
-    CC=${CMAKE_C_COMPILER}
-    CXX=${CMAKE_CXX_COMPILER}
-  )
+  if(ANKI_NATIVE)
+    find_program(ANKI_NATIVE_CC NAMES cc gcc clang REQUIRED NO_CMAKE_FIND_ROOT_PATH)
+    find_program(ANKI_NATIVE_CXX NAMES c++ g++ clang++ REQUIRED NO_CMAKE_FIND_ROOT_PATH)
+    message(STATUS "anki_build_go: ${output_name} builds for the host with ${ANKI_NATIVE_CC}")
+    set(go_env
+      CGO_ENABLED=1
+      GOOS=linux
+      CC=${ANKI_NATIVE_CC}
+      CXX=${ANKI_NATIVE_CXX}
+    )
+  else()
+    set(go_env
+      CGO_ENABLED=1
+      GOOS=linux
+      GOARCH=arm
+      GOARM=7
+      CC=${CMAKE_C_COMPILER}
+      CXX=${CMAKE_CXX_COMPILER}
+    )
+  endif()
   set(go_c_flags "")
   if(ANKI_INCLUDE_DIRS)
     foreach(i IN LISTS ANKI_INCLUDE_DIRS)
@@ -77,6 +90,7 @@ function(anki_build_go)
   list(APPEND build_flags "-ldflags" "-s -w")
 
   set(cmds
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${go_out_dir}
     COMMAND ${CMAKE_COMMAND} -E env ${go_env} ${GO_EXECUTABLE} mod download -modcacherw
     COMMAND ${CMAKE_COMMAND} -E env ${go_env} ${GO_EXECUTABLE} build -o ${go_out} ${build_flags} ${go_build_paths}
   )
@@ -96,5 +110,7 @@ function(anki_build_go)
     VERBATIM
   )
   add_custom_target(${ANKI_NAME} ALL DEPENDS ${stamp_file})
-  install(PROGRAMS ${go_out} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+  if(NOT ANKI_NATIVE)
+    install(PROGRAMS ${go_out} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+  endif()
 endfunction()

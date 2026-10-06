@@ -92,8 +92,25 @@ else()
   add_definitions(-DFACTORY_TEST_DEV=0)
 endif()
 
-add_definitions(-DANKI_BUILD_SHA="${ANKI_BUILD_SHA}")
-add_definitions(-DANKI_BUILD_BRANCH="${ANKI_BUILD_BRANCH}")
+option(STANDALONE_SIM "build for sim in webots" OFF)
+
+if (STANDALONE_SIM)
+  message(STATUS "STANDALONE_SIM: ON. BUILDING BINARIES FOR WEBOTS, NOT VECTOR")
+  add_definitions(-DSTANDALONE_SIM)
+  set(STANDALONE_SIM_NOWARN
+    -Wno-unused-variable
+    -Wno-unused-const-variable
+    -Wno-unused-local-typedef
+    -Wno-unused-function
+  )
+endif()
+
+set(ANKI_BUILD_INFO_DIR "${CMAKE_BINARY_DIR}/buildInfo")
+file(CONFIGURE OUTPUT "${ANKI_BUILD_INFO_DIR}/ankiBuildSha.h" CONTENT
+"#pragma once
+#define ANKI_BUILD_SHA \"${ANKI_BUILD_SHA}\"
+#define ANKI_BUILD_BRANCH \"${ANKI_BUILD_BRANCH}\"
+")
 
 #
 # Pass ANKI defines from the command-line to all targets
@@ -138,7 +155,6 @@ endif()
 
 set(ANKI_EXTERNAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/EXTERNALS")
 set(ANKI_THIRD_PARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rd")
-set(OKAO_VISION_DIR "${CMAKE_CURRENT_SOURCE_DIR}/okaoVision")
 
 set(ANKI_SRCLIST_DIR "${CMAKE_SOURCE_DIR}/generated/cmake")
 
@@ -232,12 +248,10 @@ endif()
 # Recommend moving for leaf CMakeLists.txt to this file
 
 include(opencv)
-include(okao)
 include(flatbuffers)
 include(sodium)
 include(aubio)
 include(signalessence)
-include(pryon_lite)
 
 write_license_html()
 check_licenses()
