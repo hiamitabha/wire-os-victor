@@ -5,14 +5,14 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Happy",
-          "value" : 0.8
+          "value" : 0.25
         },{
           "emotionType" : "Stimulated",
-          "value" : 0.9
+          "value" : 0.35
         },
         {
           "emotionType" : "Social",
-          "value" : 1.0
+          "value" : 0.3
         }
       ]
     },
@@ -21,14 +21,14 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Happy",
-          "value" : -0.8
+          "value" : -0.9
         },{
           "emotionType" : "Stimulated",
-          "value" : -0.2
+          "value" : -0.3
         },
         {
           "emotionType" : "Social",
-          "value" : -0.3
+          "value" : -0.5
         }
       ]
     },
@@ -37,14 +37,14 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Happy",
-          "value" : 0.1
+          "value" : 0.02
         },{
           "emotionType" : "Stimulated",
-          "value" : 0.3
+          "value" : 0.05
         },
         {
           "emotionType" : "Social",
-          "value" : 0.2
+          "value" : 0.05
         }
       ]
     },
@@ -53,15 +53,15 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Happy",
-          "value" : 0.1
+          "value" : 0.02
         },
         {
           "emotionType" : "Stimulated",
-          "value" : -0.08
+          "value" : -0.02
         },
         {
           "emotionType" : "Social",
-          "value" : 0.2
+          "value" : 0.04
         }
       ],
       "repetitionPenalty": {
@@ -78,15 +78,15 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Happy",
-          "value" : 1.0
+          "value" : 0.3
         },
         {
           "emotionType" : "Stimulated",
-          "value" : -0.15
+          "value" : -0.05
         },
         {
           "emotionType" : "Social",
-          "value" : 1.0
+          "value" : 0.3
         }
       ]
     },
@@ -95,15 +95,15 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Happy",
-          "value" : 0.2
+          "value" : -0.15
         },
         {
           "emotionType" : "Stimulated",
-          "value" : 0.2
+          "value" : 0.05
         },
         {
           "emotionType" : "Social",
-          "value" : 1.0
+          "value" : 0.2
         }
       ]
     },
@@ -112,11 +112,11 @@
     "emotionAffectors" : [
         {
           "emotionType" : "Happy",
-          "value" : -0.1
+          "value" : -0.35
         },
         {
           "emotionType" : "Stimulated",
-          "value" : 0.3
+          "value" : 0.1
         }
       ]
     },
@@ -125,11 +125,11 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Happy",
-          "value" : 0.1
+          "value" : 0.02
         },
         {
           "emotionType" : "Stimulated",
-          "value" : 0.1
+          "value" : 0.03
         }
       ],
       "repetitionPenalty": {
@@ -162,11 +162,11 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Happy",
-          "value" : 0.1
+          "value" : 0.02
         },
         {
           "emotionType" : "Stimulated",
-          "value" : 0.4
+          "value" : 0.1
         }
       ]
     },
@@ -175,7 +175,7 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Trust",
-          "value" : 0.1
+          "value" : 0.03
         },
         {
           "emotionType" : "Stimulated",
@@ -217,11 +217,11 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Trust",
-          "value" : 0.1
+          "value" : 0.03
         },
         {
           "emotionType" : "Happy",
-          "value" : 0.1
+          "value" : 0.02
         },
         {
           "emotionType" : "Stimulated",
@@ -242,19 +242,19 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Trust",
-          "value" : 0.1
+          "value" : 0.03
         },
         {
           "emotionType" : "Happy",
-          "value" : 0.1
+          "value" : 0.02
         },
         {
           "emotionType" : "Stimulated",
-          "value" : -0.08
+          "value" : -0.03
         },
         {
           "emotionType" : "Social",
-          "value" : 0.2
+          "value" : 0.04
         }
       ],
       "repetitionPenalty": {
@@ -271,19 +271,19 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Trust",
-          "value" : 0.1
+          "value" : 0.03
         },
         {
           "emotionType" : "Happy",
-          "value" : 1.0
+          "value" : 0.3
         },
         {
           "emotionType" : "Stimulated",
-          "value" : -0.15
+          "value" : -0.05
         },
         {
           "emotionType" : "Social",
-          "value" : 1.0
+          "value" : 0.3
         }
       ],
       "repetitionPenalty": {

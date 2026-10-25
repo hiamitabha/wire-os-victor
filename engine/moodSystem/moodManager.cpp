@@ -19,6 +19,9 @@
 #include "coretech/common/engine/utils/timer.h"
 #include "coretech/common/engine/jsonTools.h"
 #include "engine/actions/actionContainers.h"
+#include "engine/components/battery/batteryComponent.h"
+#include "engine/components/settingsManager.h"
+#include "clad/robotInterface/messageEngineToRobot.h"
 #include "engine/actions/actionInterface.h"
 #include "engine/ankiEventUtil.h"
 #include "engine/audio/engineRobotAudioClient.h"
@@ -46,9 +49,33 @@
 namespace Anki {
 namespace Vector {
 
-namespace{
-  const std::string kWebVizModuleName = "mood";
+namespace {
+// Events that count as "mistreatment" for grudge accumulation, and how much grudge they add.
+// A grumpy robot remembers being wronged.
+static const std::map<std::string, float> kGrudgeEvents = {
+  { "RobotShaken",           0.30f },
+  { "ReactToJoltInPalm",     0.25f },
+  { "FistBumpLeftHanging",   0.20f },
+  { "CliffReact",            0.10f },
+  { "ReactToUnexpectedMovement", 0.15f },
+  { "DrivingActionFailedWithAbort", 0.05f },
+  { "PickingOrPlacingActionFailedWithAbort", 0.05f },
+};
+
+CONSOLE_VAR(float, kGrudgeDecayPerMinute, "MoodManager.Grudge", 0.10f);   // grudge fades slowly: ~10 min from max
+CONSOLE_VAR(float, kGrudgePettingForgiveness, "MoodManager.Grudge", 0.05f); // per petting event
+CONSOLE_VAR(float, kGrudgeMaxHappyBias, "MoodManager.Grudge", -0.4f);     // max downward bias on Happy/Social
+CONSOLE_VAR(float, kGrudgeMaxConfidentBias, "MoodManager.Grudge", -0.3f); // pushes toward Frustrated simple mood
+CONSOLE_VAR(float, kGrudgeLowBatteryMood, "MoodManager.Grudge", 0.15f);   // extra grumpiness floor when battery is low
+CONSOLE_VAR(float, kGrudgeHotTempMood, "MoodManager.Grudge", 0.10f);      // extra grumpiness floor when battery is hot
+CONSOLE_VAR(float, kGrudgeHotTempThreshold_C, "MoodManager.Grudge", 40.0f);
+
+// Grudge eye tinting: eyes shift toward red while a grudge is held
+CONSOLE_VAR(float, kGrudgeEyeTintThreshold, "MoodManager.Grudge", 0.15f);  // grudge level to start tinting
+CONSOLE_VAR(float, kGrudgeEyeTintRelease, "MoodManager.Grudge", 0.05f);    // hysteresis: tint off below this
+CONSOLE_VAR(float, kGrudgeEyeRedHue, "MoodManager.Grudge", 0.97f);         // "angry red" hue (matches ROBOT_RED)
 }
+
 
 // For now StaticMoodData is basically a singleton, but hidden behind an interface in mood manager incase we ever
 // need it to be different per robot / moodManager
@@ -58,6 +85,7 @@ CONSOLE_VAR_EXTERN(float, kTimeMultiplier);
 
 namespace {
 static const char* kActionResultEmotionEventKey = "actionResultEmotionEvents";
+const std::string kWebVizModuleName = "mood";
 static const char* kAudioParametersMapKey = "audioParameterMap";
 static const char* kSimpleMoodAudioKey = "simpleMoodAudioParameters";
 
@@ -345,6 +373,11 @@ void MoodManager::UpdateDependent(const RobotCompMap& dependentComps)
     }
   }
 
+  // Grumpy personality: decay grudge over time, apply embodiment (battery/temp) floors,
+  // and bias emotions while a grudge is held
+  UpdateGrudge(timeDelta, dependentComps);
+  ApplyGrudgeBias();
+
   const bool hasAudioComp = dependentComps.HasComponent<Audio::EngineRobotAudioClient>();
   if( hasAudioComp && ( (currentTime - _lastAudioSendTime_s) > kMoodManager_AudioSendPeriod_s ) ) {
     SendEmotionsToAudio(dependentComps.GetComponent<Audio::EngineRobotAudioClient>());
@@ -434,6 +467,7 @@ void MoodManager::SendMoodToWebViz(const CozmoContext* context, const std::strin
     }
 
     data["simpleMood"] = SimpleMoodTypeToString(GetSimpleMood());
+    data["grudge"] = _grudgeValue;
 
     webService->SendToWebViz( kWebVizModuleName, data );
   }
@@ -651,8 +685,31 @@ void MoodManager::TriggerEmotionEvent(const std::string& eventName, float curren
     if( ANKI_DEV_CHEATS && kMoodManager_WebVizPeriod_s >= 0.0f && nullptr != _robot ) {
       SendMoodToWebViz(_robot->GetContext());
     }
-
     const float timeSinceLastOccurrence = UpdateLatestEventTimeAndGetTimeElapsedInSeconds(eventName, currentTimeInSeconds);
+
+    // Grumpy personality: mistreatment events feed the grudge
+    {
+      const auto grudgeIt = kGrudgeEvents.find(eventName);
+      if( grudgeIt != kGrudgeEvents.end() ) {
+        AddToGrudge(grudgeIt->second);
+        _lastGrudgeEventTime_s = currentTimeInSeconds;
+        PRINT_CH_INFO("Mood", "MoodManager.Grudge.Gained",
+                      "Event '%s' raised grudge to %f", eventName.c_str(), _grudgeValue);
+      }
+    }
+
+    // Grumpy personality: petting slowly earns forgiveness
+    if( (eventName == "PettingBlissLevelIncrease") ||
+        (eventName == "PettingReachedMaxBliss") ||
+        (eventName == "PettingBlissLevelIncreaseOnPalm") ||
+        (eventName == "PettingReachedMaxBlissOnPalm") ) {
+      if( _grudgeValue > 0.0f ) {
+        AddToGrudge(-kGrudgePettingForgiveness);
+        PRINT_CH_INFO("Mood", "MoodManager.Grudge.Forgiven",
+                      "Petting lowered grudge to %f", _grudgeValue);
+      }
+    }
+
     const auto& defaultPenalty = GetStaticMoodData().GetDefaultRepetitionPenalty();
     const float repetitionPenalty = emotionEvent->CalculateRepetitionPenalty(timeSinceLastOccurrence, defaultPenalty);
 
@@ -961,6 +1018,149 @@ void MoodManager::SubscribeToWebViz()
 
   _signalHandles.emplace_back( webService->OnWebVizSubscribed( kWebVizModuleName ).ScopedSubscribe( onSubscribedBehaviors ) );
   _signalHandles.emplace_back( webService->OnWebVizData( kWebVizModuleName ).ScopedSubscribe( onDataBehaviors ) );
+}
+
+
+void MoodManager::UpdateGrudge(float timeDelta, const RobotCompMap& dependentComps)
+{
+  // Slow decay: an old grumpy robot can't stay mad forever (but it takes a while)
+  if( _grudgeValue > 0.0f ) {
+    const float decay = kGrudgeDecayPerMinute * (timeDelta / 60.0f);
+    _grudgeValue = Util::Clamp(_grudgeValue - decay, 0.0f, 1.0f);
+  }
+
+  // Embodiment: a grumpy old man complains about his aching battery.
+  // Low battery or an overheating battery raise the grudge floor.
+  if( (_robot != nullptr) && _robot->HasComponent<BatteryComponent>() ) {
+    const auto& battery = _robot->GetComponent<BatteryComponent>();
+
+    float grudgeFloor = 0.0f;
+    if( battery.IsBatteryLow() ) {
+      grudgeFloor = std::max(grudgeFloor, kGrudgeLowBatteryMood);
+    }
+    if( battery.GetBatteryTemperature_C() >= kGrudgeHotTempThreshold_C ) {
+      grudgeFloor = std::max(grudgeFloor, kGrudgeHotTempMood);
+    }
+
+    if( _grudgeValue < grudgeFloor ) {
+      _grudgeValue = grudgeFloor;
+    }
+  }
+
+  // Grumpy personality: let the eyes show how he feels
+  UpdateGrudgeEyeTint();
+}
+
+void MoodManager::ApplyGrudgeBias()
+{
+  // Un-apply last tick's bias, then apply the current one. This keeps the bias
+  // a live function of the grudge value rather than an accumulating offset.
+  if( _grudgeBiasApplied != 0.0f ) {
+    GetEmotion(EmotionType::Happy).Add(-_grudgeBiasApplied);
+    GetEmotion(EmotionType::Social).Add(-_grudgeBiasApplied);
+    GetEmotion(EmotionType::Confident).Add(-_grudgeBiasApplied * 0.75f);
+    _grudgeBiasApplied = 0.0f;
+  }
+
+  if( _grudgeValue > 0.0f ) {
+    const float happyBias = kGrudgeMaxHappyBias * _grudgeValue;
+    const float confidentBias = kGrudgeMaxConfidentBias * _grudgeValue;
+
+    if( !IsEmotionFixed(EmotionType::Happy) ) {
+      GetEmotion(EmotionType::Happy).Add(happyBias);
+    }
+    if( !IsEmotionFixed(EmotionType::Social) ) {
+      GetEmotion(EmotionType::Social).Add(happyBias);
+    }
+    if( !IsEmotionFixed(EmotionType::Confident) ) {
+      GetEmotion(EmotionType::Confident).Add(confidentBias);
+    }
+
+    _grudgeBiasApplied = happyBias;
+  }
+}
+
+
+bool MoodManager::GetUserEyeHueSat(float& hue, float& saturation) const
+{
+  if( (_robot == nullptr) || !_robot->HasComponent<SettingsManager>() ) {
+    return false;
+  }
+
+  const auto& settings = _robot->GetComponent<SettingsManager>();
+
+  // Note: custom color details aren't exposed via the public settings API; fall back to
+  // the named eye color, which covers the standard case.
+
+  const uint32_t eyeColorVal = settings.GetRobotSettingAsUInt(external_interface::RobotSetting::eye_color);
+  const std::string eyeColorName = EyeColor_Name(static_cast<external_interface::EyeColor>(eyeColorVal));
+
+  if( eyeColorName == "RAINBOW_EYES" ) {
+    // Don't fight the rainbow thread; leave rainbow alone
+    return false;
+  }
+
+  const Json::Value& config = _robot->GetContext()->GetDataLoader()->GetEyeColorConfig();
+  const Json::Value& eyeColorData = config[eyeColorName];
+  if( eyeColorData.isNull() ) {
+    return false;
+  }
+
+  hue        = eyeColorData["Hue"].asFloat();
+  saturation = eyeColorData["Saturation"].asFloat();
+  return true;
+}
+
+void MoodManager::UpdateGrudgeEyeTint()
+{
+  if( _robot == nullptr ) {
+    return;
+  }
+
+  // Hysteresis: start tinting above kGrudgeEyeTintThreshold, stop below kGrudgeEyeTintRelease
+  const bool shouldTint = _grudgeTintActive ? (_grudgeValue > kGrudgeEyeTintRelease)
+                                             : (_grudgeValue >= kGrudgeEyeTintThreshold);
+
+  if( !shouldTint ) {
+    if( _grudgeTintActive ) {
+      // Grudge faded: restore the user's eye color
+      float userHue = 0.0f, userSat = 1.0f;
+      if( GetUserEyeHueSat(userHue, userSat) ) {
+        _robot->SendRobotMessage<RobotInterface::SetFaceHue>(userHue);
+        _robot->SendRobotMessage<RobotInterface::SetFaceSaturation>(userSat);
+        PRINT_CH_INFO("Mood", "MoodManager.Grudge.EyeColorRestored",
+                      "Grudge faded, eye color restored to hue %.2f", userHue);
+      }
+      _grudgeTintActive = false;
+      _lastTintHueSent = -1.0f;
+    }
+    return;
+  }
+
+  float userHue = 0.0f, userSat = 1.0f;
+  if( !GetUserEyeHueSat(userHue, userSat) ) {
+    return; // can't determine user color (e.g. rainbow eyes) — don't tint
+  }
+
+  _grudgeTintActive = true;
+
+  // Interpolate hue toward angry red with grudge intensity.
+  // Hue is circular; interpolate the short way around.
+  float hueDelta = kGrudgeEyeRedHue - userHue;
+  if( hueDelta > 0.5f ) {
+    hueDelta -= 1.0f;
+  } else if( hueDelta < -0.5f ) {
+    hueDelta += 1.0f;
+  }
+
+  const float tintStrength = Util::Clamp(_grudgeValue, 0.0f, 1.0f);
+  const float tintedHue = userHue + hueDelta * tintStrength;
+
+  // Only send when the hue has changed meaningfully (avoid message spam every tick)
+  if( std::abs(tintedHue - _lastTintHueSent) > 0.01f ) {
+    _robot->SendRobotMessage<RobotInterface::SetFaceHue>(tintedHue);
+    _lastTintHueSent = tintedHue;
+  }
 }
 
 

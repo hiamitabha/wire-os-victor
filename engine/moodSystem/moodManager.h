@@ -30,8 +30,9 @@
 #include "util/entityComponent/dependencyManagedEntity.h"
 #include "util/entityComponent/iDependencyManagedComponent.h"
 #include "util/graphEvaluator/graphEvaluator2d.h"
-#include "util/helpers/noncopyable.h"
+#include "util/math/math.h"
 #include "util/signals/simpleSignal_fwd.h"
+#include "util/helpers/noncopyable.h"
 
 #include <assert.h>
 #include <map>
@@ -167,6 +168,18 @@ public:
   
   float GetLastUpdateTime() const { return _lastUpdateTime; }
 
+  // ==================== Grudge System (Grumpy personality) ====================
+  // A "grudge" accumulates when the robot is mistreated (shaken, jolted, left hanging,
+  // repeated failures). It decays slowly over time and while being petted, and biases
+  // Happy/Social downward and Confident toward frustration while active.
+  float GetGrudgeValue() const { return _grudgeValue; }
+  void  AddToGrudge(float delta) { _grudgeValue = Util::Clamp(_grudgeValue + delta, 0.0f, 1.0f); }
+
+  // Grumpy personality: eye color tinting. While a grudge is held, the robot's eyes
+  // shift toward red proportional to the grudge. Returns to the user's configured
+  // eye color once the grudge fades.
+  bool IsGrudgeTintingEyes() const { return _grudgeTintActive; }
+
   // check if the passed in emotion event exists in our map
   bool IsValidEmotionEvent(const std::string& eventName) const;
   
@@ -266,6 +279,20 @@ private:
   std::vector<std::string> _pendingAppEvents;
 
   double _cumlPosStimDeltaToAdd = 0.0;
+
+  // ==================== Grudge System ====================
+  void UpdateGrudge(float timeDelta, const RobotCompMap& dependentComps);
+  void ApplyGrudgeBias();
+
+  float _grudgeValue = 0.0f;          // 0..1, how much of a grudge the robot is holding
+  float _grudgeBiasApplied = 0.0f;    // last bias applied to Happy/Social (so it can be un-applied)
+  float _lastGrudgeEventTime_s = 0.0f;
+
+  // Grudge eye tinting: eyes shift toward red while a grudge is held
+  void UpdateGrudgeEyeTint();
+  bool  GetUserEyeHueSat(float& hue, float& saturation) const;
+  bool  _grudgeTintActive = false;      // currently overriding eye color due to grudge
+  float _lastTintHueSent = -1.0f;       // last hue we sent (avoid spamming messages)
 
   float _lastSimpleMoodStartTime_s = 0.0f;
   SimpleMoodType _lastSimpleMood = SimpleMoodType::Count;

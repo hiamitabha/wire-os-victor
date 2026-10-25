@@ -15,14 +15,14 @@
       "emotionAffectors" : [										  
         {
           "emotionType" : "Happy",
-          "value" : 0.1
+          "value" : 0.04
         },{
           "emotionType" : "Stimulated",
-          "value" : 0.2
+          "value" : 0.1
         },
         {
           "emotionType" : "Social",
-          "value" : 0.2
+          "value" : 0.1
         }
       ],
       "repetitionPenalty": {

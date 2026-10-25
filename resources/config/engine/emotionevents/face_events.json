@@ -5,15 +5,15 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Social",
-          "value" : 0.2
+          "value" : 0.05
         },
         {
           "emotionType" : "Happy",
-          "value" : 0.15
+          "value" : 0.03
         },
         {
           "emotionType" : "Stimulated",
-          "value" : 0.1
+          "value" : 0.05
         }
       ],
       "repetitionPenalty": {
@@ -38,15 +38,15 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Social",
-          "value" : 0.8
+          "value" : 0.3
         },
         {
           "emotionType" : "Happy",
-          "value" : 0.5
+          "value" : 0.1
         },
         {
           "emotionType" : "Stimulated",
-          "value" : 0.4
+          "value" : 0.15
         }
       ]
     },
@@ -55,15 +55,15 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Social",
-          "value" : 0.6
+          "value" : 0.1
         },
         {
           "emotionType" : "Happy",
-          "value" : 0.35
+          "value" : -0.05
         },
         {
           "emotionType" : "Stimulated",
-          "value" : 0.2
+          "value" : 0.05
         }
       ]
     },
@@ -72,7 +72,7 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Confident",
-          "value" : -0.1
+          "value" : -0.15
         }
       ],
       "repetitionPenalty": {
@@ -89,15 +89,15 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Social",
-          "value" : 0.6
+          "value" : 0.3
         },
         {
           "emotionType" : "Stimulated",
-          "value" : 0.5
+          "value" : 0.2
         },
         {
           "emotionType" : "Happy",
-          "value" : 0.5
+          "value" : 0.1
         }
       ]
     },
@@ -106,11 +106,11 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Social",
-          "value" : 0.8
+          "value" : 0.3
         },
         {
           "emotionType" : "Stimulated",
-          "value" : 0.55
+          "value" : 0.2
         }
       ]
     },
@@ -119,19 +119,19 @@
       "emotionAffectors" : [
         {
           "emotionType" : "Social",
-          "value" : 1.0
+          "value" : 0.4
         },
         {
           "emotionType" : "Stimulated",
-          "value" : 1.0
+          "value" : 0.3
         },
         {
           "emotionType" : "Happy",
-          "value" : 0.5
+          "value" : 0.1
         },
         {
           "emotionType" : "Confident",
-          "value" : 0.5
+          "value" : 0.2
         }
       ]
     },
@@ -140,11 +140,11 @@
       "emotionAffectors": [
         {
           "emotionType": "Social",
-          "value": 0.1
+          "value": 0.05
         },
         {
           "emotionType": "Confident",
-          "value": 0.1
+          "value": 0.05
         }
       ]
     },
@@ -153,15 +153,15 @@
       "emotionAffectors": [
         {
           "emotionType": "Social",
-          "value": 0.4
+          "value": 0.15
         },
         {
           "emotionType": "Happy",
-          "value": 0.7
+          "value": 0.2
         },
         {
           "emotionType": "Confident",
-          "value": 0.3
+          "value": 0.15
         }
       ]
     }
