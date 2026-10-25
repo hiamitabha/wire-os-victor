@@ -32,7 +32,8 @@ namespace {
       {"COLOR_GREEN", external_interface::EyeColor::NON_LINEAR_LIME},
       {"COLOR_BLUE", external_interface::EyeColor::SINGULARITY_SAPPHIRE},
       {"COLOR_PURPLE", external_interface::EyeColor::FALSE_POSITIVE_PURPLE},
-      {"COLOR_RAINBOW", external_interface::EyeColor::RAINBOW_EYES}
+      {"COLOR_RAINBOW", external_interface::EyeColor::RAINBOW_EYES},
+      {"COLOR_RED", external_interface::EyeColor::ROBOT_RED}
   };
 }
 
@@ -141,8 +142,8 @@ external_interface::EyeColor BehaviorEyeColorVoiceCommand::ChooseColorCyclic()
   SettingsManager& settings = GetBEI().GetSettingsManager();
   external_interface::EyeColor newEyeColor = static_cast<external_interface::EyeColor>(
       settings.GetRobotSettingAsUInt(external_interface::RobotSetting::eye_color) + 1 );
-  // roll over if needed
-  if (newEyeColor >= external_interface::EyeColor_MAX) {
+  // roll over if needed (use > not >= so EyeColor_MAX itself is included in the cycle)
+  if (newEyeColor > external_interface::EyeColor_MAX) {
     newEyeColor = external_interface::EyeColor_MIN;
   }
   return newEyeColor;

@@ -232,6 +232,7 @@
     var bottomContainer = $('<div id="bottomContainer"></div>').appendTo(elem);
     var leftControls = $('<div id="leftControls"></div>').appendTo(bottomContainer);
     leftControls.append('<div id="simpleMoodDisplay"></div>');
+    leftControls.append('<div id="grudgeDisplay"></div>');
     leftControls.append('<div>' +
                         '<input type="checkbox" id="showEvents" checked/>' +
                         '<label for="showEvents">Show events</label>' +
@@ -338,6 +339,10 @@
 
     if( "simpleMood" in data ) {
       $('#simpleMoodDisplay').text( 'SimpleMood: ' + data.simpleMood );
+    }
+
+    if( "grudge" in data ) {
+      $('#grudgeDisplay').text( 'Grudge: ' + parseFloat(data.grudge).toFixed(2) );
     }
 
     for( var i=0; i<data.moods.length; ++i ) {
@@ -524,7 +529,9 @@
       #simpleMoodDisplay {
         font-weight: bold
       }
-
+      #grudgeDisplay {
+        font-weight: bold
+      }
       `;
   };
 })(moduleMethods, moduleSendDataFunc);

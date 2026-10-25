@@ -15,11 +15,13 @@
 
 #include "engine/aiComponent/aiComponent.h"
 #include "engine/aiComponent/behaviorComponent/behaviorExternalInterface/beiRobotInfo.h"
+#include "engine/moodSystem/moodManager.h"
 #include "engine/actions/animActions.h"
 
 #include "coretech/common/engine/jsonTools.h"
 #include "coretech/common/engine/utils/timer.h"
 #include "util/logging/DAS.h"
+#include "util/console/consoleInterface.h"
 
 
 #define LOG_CHANNEL "Behaviors"
@@ -38,7 +40,11 @@ namespace{
   const char* kKey_AnimLooping                = "looping";
   const char* kKey_AnimWaiting                = "waiting";
   const char* kKey_AnimInHand                 = "inHand";
-  const char* kKey_AnimOnGround               = "onGround";
+  const char* kKey_AnimOnGround                = "onGround";
+
+  // Grumpy personality: when the robot holds a grudge, being shaken gets an ANGRY face
+  CONSOLE_VAR(float, kGrudgeAngryFaceThreshold, "Behaviors.Grudge", 0.25f);
+  const char* kAngryFaceAnimName = "anim_grudge_angryface";
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -158,6 +164,16 @@ void BehaviorReactToRobotShaken::TransitionToDoneShaking()
 
   auto getOutCallback = [this]()
   {
+    // Grumpy personality: if the robot is holding a grudge, skip the dizzy get-out
+    // and glare with the angry face instead
+    const float grudge = GetBEI().GetMoodManager().GetGrudgeValue();
+    if( grudge >= kGrudgeAngryFaceThreshold ) {
+      LOG_INFO("BehaviorReactToRobotShaken.GrudgeAnger",
+               "Grudge %.2f >= %.2f, showing angry face", grudge, kGrudgeAngryFaceThreshold);
+      DelegateIfInControl( new PlayAnimationAction(kAngryFaceAnimName) );
+      return;
+    }
+
     // now that we've had time to transition out of the shake anim, check if we're on the ground or still in hand and
     // play the appropriate animation
     const bool isOnTreads = ( GetBEI().GetOffTreadsState() == OffTreadsState::OnTreads );

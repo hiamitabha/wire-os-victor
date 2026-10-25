@@ -5,7 +5,11 @@
       "emotionAffectors": [										  
         {
           "emotionType": "Confident",
-          "value": 0.3
+          "value": 0.1
+        },
+        {
+          "emotionType": "Happy",
+          "value": -0.1
         }
       ]
     },
@@ -15,6 +19,10 @@
         {
           "emotionType": "Stimulated",
           "value": -0.5
+        },
+        {
+          "emotionType": "Happy",
+          "value": 0.1
         }
       ]
     }

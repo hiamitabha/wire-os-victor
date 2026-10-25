@@ -23,6 +23,23 @@ Mood values can effect any number of things in code, but primarily they are used
 behavior selection. For example, the `DrivingAnimationHandler` chooses a set of driving animations based on
 the current mood.
 
+## Grudge System (Grumpy Personality)
+
+On top of the emotion values, WireOS adds a **grudge** value (0.0 to 1.0) in the `MoodManager`.
+The grudge represents how wronged the robot feels:
+
+* **Accumulates** on mistreatment events (shaken, jolted, fist bump left hanging, cliffs,
+  unexpected movement, repeated action aborts) — see `kGrudgeEvents` in `moodManager.cpp`.
+* **Decays** slowly over time (`MoodManager.Grudge` console vars control the rate).
+* **Is forgiven** (slightly) by petting.
+* **Has an embodiment floor**: low battery or a hot battery (≥ 40 °C) raise the minimum grudge —
+  the robot is literally grumpier when tired or overheated.
+
+While a grudge is held, `MoodManager::ApplyGrudgeBias()` biases `Happy` and `Social` downward and
+`Confident` toward frustration, which flows into `SimpleMood` selection (a high grudge pushes the
+robot toward `Frustrated`) and therefore into animation and behavior selection. The current grudge
+value is visible in the `mood` WebViz module.
+
 ## Historical note
 
 The emotion system was originally intended to be very broad and the main driver of behavior. Over time, it's
